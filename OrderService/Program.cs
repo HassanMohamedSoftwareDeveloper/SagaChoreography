@@ -17,7 +17,8 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
-    builder.Services.AddDbContext<OrderDbContext>(config => config.UseSqlServer(builder.Configuration.GetConnectionString("OrderDbConnection")));
+    builder.Services.AddDbContext<OrderDbContext>(config => config.UseSqlServer(builder.Configuration.GetConnectionString("OrderDbConnection"),
+         options => options.MigrationsHistoryTable("OrderMigrations", "ORDERS")));
 
     builder.Services.AddMassTransit(busConfigure =>
     {

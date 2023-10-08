@@ -9,8 +9,13 @@ public sealed class OrderCreatedConsumer(InventoryDbContext dbContext, IPublishE
 {
     public async Task Consume(ConsumeContext<OrderCreatedEvent> context)
     {
-        logger.LogInformation("Start consume OrderCreatedEvent with order id{orderId}", context.Message.OrderId);
-        var itemIds = context.Message.Items
+        var orderId = context.Message.OrderId;
+        var customer = context.Message.Customer;
+        var total = context.Message.OrderTotal;
+        var items = context.Message.Items;
+
+        logger.LogInformation("Start consume OrderCreatedEvent with order id{orderId}", orderId);
+        var itemIds = items
             .Select(x => x.ItemId)
             .ToList();
 
@@ -20,33 +25,37 @@ public sealed class OrderCreatedConsumer(InventoryDbContext dbContext, IPublishE
 
         if (itemStocks is not { } or { Count: 0 })
         {
-            logger.LogInformation("No stock and start order cancellation process with order id{orderId}", context.Message.OrderId);
-            await publishEndpoint.Publish(new OrderCanceledEvent(context.Message.OrderId));
+            logger.LogInformation("No stock and start order cancellation process with order id{orderId}", orderId);
+            await publishEndpoint.Publish(new OrderCanceledEvent(orderId));
             return;
         }
 
-        foreach (var item in context.Message.Items)
+        foreach (var item in items)
         {
             var itemStock = itemStocks.Find(x => x.ItemId == item.ItemId);
 
             if (itemStock is not { } or { Quantity: <= 0 } || itemStock.Quantity < item.Quantity)
             {
-                logger.LogInformation("No stock and start order cancellation process with order id{orderId}", context.Message.OrderId);
-                await publishEndpoint.Publish(new OrderCanceledEvent(context.Message.OrderId));
+                logger.LogInformation("No stock and start order cancellation process with order id{orderId}", orderId);
+                await publishEndpoint.Publish(new OrderCanceledEvent(orderId));
                 return;
             }
 
             itemStock.Quantity -= item.Quantity;
             itemStock.UpdateDate = DateTime.Now;
-
         }
+
         dbContext.Inventories.UpdateRange(itemStocks);
+
         if (await dbContext.SaveChangesAsync() == 0)
         {
-            logger.LogInformation("Failed to update inventory stock and start order cancellation process with order id{orderId}", context.Message.OrderId);
-            await publishEndpoint.Publish(new OrderCanceledEvent(context.Message.OrderId));
+            logger.LogInformation("Failed to update inventory stock and start order cancellation process with order id{orderId}", orderId);
+            await publishEndpoint.Publish(new OrderCanceledEvent(orderId));
+            return;
         }
 
-        logger.LogInformation("Update inventory stock success for order id {orderId}", context.Message.OrderId);
+        await publishEndpoint.Publish(new InventoryReservedEvent(orderId, customer, total, items));
+
+        logger.LogInformation("Update inventory stock success for order id {orderId}", orderId);
     }
 }

@@ -1,4 +1,3 @@
 ﻿namespace OrderService.Models;
 
-public record OrderModel(string Customer, List<OrderLineModel> OrderLines);
-public record OrderLineModel(int ItemId, int Quantity, decimal Price);
+public record OrderModel(string Customer, decimal OrderTotal, string Status, DateTime OrderDate, List<OrderLineModel> OrderLines);

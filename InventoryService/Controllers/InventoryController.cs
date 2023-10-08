@@ -9,6 +9,16 @@ namespace InventoryService.Controllers;
 public class InventoryController(InventoryDbContext context, ILogger<InventoryController> logger) : ControllerBase
 {
     #region Actions :
+    [HttpGet("item-stock")]
+    public async Task<IActionResult> GetStocks(CancellationToken cancellationToken = default)
+    {
+        var stocks = await context.Inventories
+            .AsNoTracking()
+            .Select(stock => new InventoryModel(stock.ItemId, stock.Quantity))
+            .ToListAsync(cancellationToken);
+
+        return Ok(stocks);
+    }
     [HttpPost("item-stock")]
     public async Task<IActionResult> AddInventoryStock(InventoryModel request, CancellationToken cancellationToken = default)
     {

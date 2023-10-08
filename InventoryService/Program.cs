@@ -18,7 +18,8 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
-    builder.Services.AddDbContext<InventoryDbContext>(config => config.UseSqlServer(builder.Configuration.GetConnectionString("InventoryDbConnection")));
+    builder.Services.AddDbContext<InventoryDbContext>(config => config.UseSqlServer(builder.Configuration.GetConnectionString("InventoryDbConnection"),
+         options => options.MigrationsHistoryTable("InventoryMigrations", "INV")));
 
     builder.Services.AddMassTransit(busConfigure =>
     {
