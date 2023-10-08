@@ -1,0 +1,106 @@
+version: '3.5'
+
+networks:
+  ecom-network:
+     name: Ecom.Network
+     driver: bridge
+volumes:
+  ecom_data:
+services:
+  ecom-order:
+    image: docker.io/library/orderservice
+    build: 
+        context: .
+        dockerfile: ./OrderService/Dockerfile
+    restart: always
+    container_name: Ecom.OrderService
+    depends_on: [ecom-db,ecom-mq,ecom-seq-logger]
+    environment:
+       # ConnectionStrings_OrderDbConnection: Server=ecom-db;Initial Catalog=OrderDB;User Id=sa;Password=P@ssw0rd;
+       ASPNETCORE_ENVIRONMENT: Development
+       ASPNETCORE_URLS: http://+:80
+    networks:
+      - ecom-network
+    ports:
+      - 8088:80
+    links:
+      - ecom-db
+      - ecom-mq
+      - ecom-seq-logger 
+
+
+  ecom-inventory:
+    image: docker.io/library/inventoryservice
+    build: 
+        context: .
+        dockerfile: ./InventoryService/Dockerfile
+    restart: always
+    container_name: Ecom.InventoryService
+    depends_on: [ecom-db,ecom-mq,ecom-seq-logger]
+    environment:
+       # ConnectionStrings_InventoryDbConnection: Server=ecom-db;Initial Catalog=InventoryDB;User Id=sa;Password=P@ssw0rd;
+       ASPNETCORE_ENVIRONMENT: Development
+       ASPNETCORE_URLS: http://+:80
+    networks:
+      - ecom-network
+    ports:
+      - 8089:80
+    links:
+      - ecom-db
+      - ecom-mq
+      - ecom-seq-logger   
+      
+       
+  ecom-db:
+     image: mcr.microsoft.com/mssql/server:2022-latest
+     container_name: Ecom.SqlDB
+     hostname: ecom-db
+     restart: always
+     networks:
+      - ecom-network
+     ports:
+        - 1433:1433
+     volumes:
+        -  ecom_data:/var/lib/sqldb
+        - ecom_data:/var/log/sqldb
+     environment:
+        MSSQL_PID : Express
+        ACCEPT_EULA : Y
+        MSSQL_SA_PASSWORD: P@ssw0rd
+     
+
+  ecom-mq:
+    image: rabbitmq:management
+    container_name: Ecom.RabbitMq
+    hostname: ecom-mq
+    networks:
+      - ecom-network
+    ports:
+        - 15672:15672
+        - 5672:5672
+    volumes:
+        - ecom_data:/var/lib/rabbitmq
+        - ecom_data:/var/log/rabbitmq
+    environment:
+        RABBITMQ_DEFAULT_USER: guest
+        RABBITMQ_DEFAULT_PASS: guest
+
+  ecom-seq-logger:
+    image: datalust/seq:latest  
+    container_name: Ecom.Seq.Logger
+    hostname: ecom-seq-logger
+    networks:
+      - ecom-network
+    ports:
+        - 5341:5341
+        - 5342:80
+    environment:
+        SEQ_API_CANONICALURI: http://seq.ecom.com/
+        ACCEPT_EULA : Y
+    volumes:
+        - ecom_data:/var/lib/seq
+         
+
+
+
+  
