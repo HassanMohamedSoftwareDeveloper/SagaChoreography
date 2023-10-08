@@ -24,8 +24,8 @@ try
     builder.Services.AddMassTransit(busConfigure =>
     {
         busConfigure.SetKebabCaseEndpointNameFormatter();
-
         busConfigure.AddConsumer<OrderCreatedConsumer>();
+        busConfigure.AddConsumer<PaymentFailedConsumer>();
 
         busConfigure.UsingRabbitMq((context, configurator) =>
         {
@@ -62,6 +62,7 @@ try
 }
 catch (Exception ex)
 {
+    Console.WriteLine(ex.Message);
     Log.Fatal(ex, "Host terminated unexpectedly");
     return 1;
 }

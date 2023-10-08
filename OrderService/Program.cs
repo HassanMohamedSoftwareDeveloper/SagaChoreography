@@ -1,5 +1,6 @@
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using OrderService.Consumers;
 using OrderService.Database;
 using Serilog;
 
@@ -23,7 +24,9 @@ try
     builder.Services.AddMassTransit(busConfigure =>
     {
         busConfigure.SetKebabCaseEndpointNameFormatter();
-
+        busConfigure.AddConsumer<OrderCompletedConsumer>();
+        busConfigure.AddConsumer<InventoryReleasedConsumer>();
+        busConfigure.AddConsumer<InventoryFailedConsumer>();
 
         busConfigure.UsingRabbitMq((context, configurator) =>
         {
@@ -60,6 +63,7 @@ try
 }
 catch (Exception ex)
 {
+    Console.WriteLine(ex.Message);
     Log.Fatal(ex, "Host terminated unexpectedly");
     return 1;
 }

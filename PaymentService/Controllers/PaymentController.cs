@@ -9,6 +9,7 @@ namespace PaymentService.Controllers;
 public class PaymentController(PaymentDbContext context) : ControllerBase
 {
     #region Actions :
+    [HttpGet]
     public async Task<IActionResult> GetPayments(CancellationToken cancellationToken = default)
     {
         var payments = await context.Payments

@@ -1,3 +1,3 @@
 ﻿namespace Contracts;
 
-public record InventoryReleasedEvent(Guid OrderId, List<OrderItem> Items);
+public record InventoryReleasedEvent(Guid OrderId);

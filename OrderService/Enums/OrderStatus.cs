@@ -3,5 +3,6 @@
 public enum OrderStatus
 {
     New = 1,
-    Completed
+    Completed = 2,
+    Canceled = 3
 }

@@ -1,5 +1,6 @@
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using PaymentService.Consumers;
 using PaymentService.Database;
 using Serilog;
 
@@ -22,6 +23,7 @@ try
     {
         busConfigure.SetKebabCaseEndpointNameFormatter();
 
+        busConfigure.AddConsumer<InventoryReservedConsumer>();
 
         busConfigure.UsingRabbitMq((context, configurator) =>
         {
@@ -56,6 +58,7 @@ try
 }
 catch (Exception ex)
 {
+    Console.WriteLine(ex.Message);
     Log.Fatal(ex, "Host terminated unexpectedly");
     return 1;
 }

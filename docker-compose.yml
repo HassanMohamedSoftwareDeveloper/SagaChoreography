@@ -16,7 +16,6 @@ services:
     container_name: Ecom.OrderService
     depends_on: [ecom-db,ecom-mq,ecom-seq-logger]
     environment:
-       # ConnectionStrings_OrderDbConnection: Server=ecom-db;Initial Catalog=OrderDB;User Id=sa;Password=P@ssw0rd;
        ASPNETCORE_ENVIRONMENT: Development
        ASPNETCORE_URLS: http://+:80
     networks:
@@ -38,7 +37,6 @@ services:
     container_name: Ecom.InventoryService
     depends_on: [ecom-db,ecom-mq,ecom-seq-logger]
     environment:
-       # ConnectionStrings_InventoryDbConnection: Server=ecom-db;Initial Catalog=InventoryDB;User Id=sa;Password=P@ssw0rd;
        ASPNETCORE_ENVIRONMENT: Development
        ASPNETCORE_URLS: http://+:80
     networks:
@@ -49,7 +47,28 @@ services:
       - ecom-db
       - ecom-mq
       - ecom-seq-logger   
-      
+ 
+
+
+  ecom-payment:
+    image: docker.io/library/paymentservice
+    build: 
+        context: .
+        dockerfile: ./PaymentService/Dockerfile
+    restart: always
+    container_name: Ecom.PaymentService
+    depends_on: [ecom-db,ecom-mq,ecom-seq-logger]
+    environment:
+       ASPNETCORE_ENVIRONMENT: Development
+       ASPNETCORE_URLS: http://+:80
+    networks:
+      - ecom-network
+    ports:
+      - 8090:80
+    links:
+      - ecom-db
+      - ecom-mq
+      - ecom-seq-logger   
        
   ecom-db:
      image: mcr.microsoft.com/mssql/server:2022-latest
@@ -73,6 +92,7 @@ services:
     image: rabbitmq:management
     container_name: Ecom.RabbitMq
     hostname: ecom-mq
+    restart: always
     networks:
       - ecom-network
     ports:
@@ -89,6 +109,7 @@ services:
     image: datalust/seq:latest  
     container_name: Ecom.Seq.Logger
     hostname: ecom-seq-logger
+    restart: always
     networks:
       - ecom-network
     ports:

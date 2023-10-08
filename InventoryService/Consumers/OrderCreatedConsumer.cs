@@ -14,7 +14,7 @@ public sealed class OrderCreatedConsumer(InventoryDbContext dbContext, IPublishE
         var total = context.Message.OrderTotal;
         var items = context.Message.Items;
 
-        logger.LogInformation("Start consume OrderCreatedEvent with order id{orderId}", orderId);
+        logger.LogInformation("Start consume {Event} with order id {OrderId}", nameof(OrderCreatedEvent), orderId);
         var itemIds = items
             .Select(x => x.ItemId)
             .ToList();
@@ -25,8 +25,7 @@ public sealed class OrderCreatedConsumer(InventoryDbContext dbContext, IPublishE
 
         if (itemStocks is not { } or { Count: 0 })
         {
-            logger.LogInformation("No stock and start order cancellation process with order id{orderId}", orderId);
-            await publishEndpoint.Publish(new OrderCanceledEvent(orderId));
+            await publishEndpoint.Publish(new InventoryFailedEvent(orderId));
             return;
         }
 
@@ -36,8 +35,7 @@ public sealed class OrderCreatedConsumer(InventoryDbContext dbContext, IPublishE
 
             if (itemStock is not { } or { Quantity: <= 0 } || itemStock.Quantity < item.Quantity)
             {
-                logger.LogInformation("No stock and start order cancellation process with order id{orderId}", orderId);
-                await publishEndpoint.Publish(new OrderCanceledEvent(orderId));
+                await publishEndpoint.Publish(new InventoryFailedEvent(orderId));
                 return;
             }
 
@@ -49,13 +47,12 @@ public sealed class OrderCreatedConsumer(InventoryDbContext dbContext, IPublishE
 
         if (await dbContext.SaveChangesAsync() == 0)
         {
-            logger.LogInformation("Failed to update inventory stock and start order cancellation process with order id{orderId}", orderId);
-            await publishEndpoint.Publish(new OrderCanceledEvent(orderId));
+            await publishEndpoint.Publish(new InventoryFailedEvent(orderId));
             return;
         }
 
         await publishEndpoint.Publish(new InventoryReservedEvent(orderId, customer, total, items));
 
-        logger.LogInformation("Update inventory stock success for order id {orderId}", orderId);
+        logger.LogInformation("Update inventory stock success for order id {OrderId}", orderId);
     }
 }
